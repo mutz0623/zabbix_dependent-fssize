@@ -103,26 +103,27 @@ int	zbx_module_fssize(AGENT_REQUEST *request, AGENT_RESULT *result)
 	char	*fs;
 	struct	zbx_json j;
 	struct	statvfs s;
+	char	*str_tmp;
 
 	if ( 1 != request->nparam){
-		SET_MSG_RESULT(result, strdup("Invalid number of parameters."));
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid number of parameters."));
 		return SYSINFO_RET_FAIL;
 	}
 
 	fs = get_rparam(request, 0);
 
 	if (NULL == fs || '\0' == *fs){
-		SET_MSG_RESULT(result, "Filesystem name cannot be empty.");
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Filesystem name cannot be empty."));
 		return SYSINFO_RET_FAIL;
 	}
 
 	if( 0 != statvfs( fs, &s) ){
-		SET_MSG_RESULT(result, strdup("Cannot obtain filesystem information"));
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Cannot obtain filesystem information"));
 		return SYSINFO_RET_FAIL;
 	}
 
 	if( 0 == s.f_blocks ){
-		SET_MSG_RESULT(result, strdup("s.f_blocks is zero"));
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "s.f_blocks is zero"));
 		return SYSINFO_RET_FAIL;
 	}
 
@@ -132,13 +133,15 @@ int	zbx_module_fssize(AGENT_REQUEST *request, AGENT_RESULT *result)
 	zbx_json_adduint64(&j, "FS_FREE", s.f_bfree * s.f_bsize);
 	zbx_json_adduint64(&j, "FS_USED", (s.f_blocks - s.f_bfree) * s.f_bsize);
 	zbx_json_addstring(&j, "FS_PFREE",
-	                   zbx_dsprintf(NULL, "%lf",
+	                   str_tmp = zbx_dsprintf(NULL, "%lf",
 	                                (double)(100*s.f_bfree)/s.f_blocks ),
 	                   ZBX_JSON_TYPE_INT);
+	zbx_free(str_tmp);
 	zbx_json_addstring(&j, "FS_PUSED",
-	                   zbx_dsprintf(NULL, "%lf",
+	                   str_tmp = zbx_dsprintf(NULL, "%lf",
 	                                (double)(100*(s.f_blocks - s.f_bfree))/s.f_blocks ),
 	                   ZBX_JSON_TYPE_INT);
+	zbx_free(str_tmp);
 	zbx_json_close(&j);
 
         SET_STR_RESULT(result, zbx_strdup(NULL, j.buffer));
